@@ -1,5 +1,7 @@
 import numbers
 import tensorflow as tf
+import tensorflow_transform as tft
+import tensorflow_probability as tfp
 
 
 def all_diffs(a, b):
@@ -18,7 +20,6 @@ def all_diffs(a, b):
         mean is used.
     """
     return tf.expand_dims(a, axis=1) - tf.expand_dims(b, axis=0)
-
 
 def cdist(a, b, metric='euclidean'):
     """Similar to scipy.spatial's cdist, but symbolic.
@@ -43,16 +44,26 @@ def cdist(a, b, metric='euclidean'):
         undefined. Thus, it will never return exact zero in these cases.
     """
     with tf.name_scope("cdist"):
-        diffs = all_diffs(a, b)
-        if metric == 'sqeuclidean':
-            return tf.reduce_sum(tf.square(diffs), axis=-1)
-        elif metric == 'euclidean':
-            return tf.sqrt(tf.reduce_sum(tf.square(diffs), axis=-1) + 1e-12)
-        elif metric == 'cityblock':
-            return tf.reduce_sum(tf.abs(diffs), axis=-1)
+        if metric == 'euclidean':
+
+            v_a = tfp.stats.covariance(a, sample_axis=0, event_axis=None)
+            # v_b = tfp.stats.covariance(b, sample_axis=0, event_axis=None)
+            diffs_a = tf.divide(tf.expand_dims(a, axis=1) - tf.expand_dims(b, axis=0), tf.sqrt(v_a))
+            # diffs_b = tf.divide(tf.expand_dims(a, axis=1) - tf.expand_dims(b, axis=0), tf.sqrt(v_b))
+            return tf.sqrt((tf.reduce_sum(tf.square(diffs_a), axis=-1) + 1e-12))
+            # return tf.sqrt((tf.add(tf.reduce_sum(tf.square(diffs_a), axis=-1), tf.reduce_sum(tf.square(diffs_b), axis= -1))) + 1e-12) # + tf.reduce_sum(tf.transpose(diffs) / v_b, axis=-1))
         else:
-            raise NotImplementedError(
-                'The following metric is not implemented by `cdist` yet: {}'.format(metric))
+            diffs = all_diffs(a, b)
+            if metric == 'sqeuclidean':
+                return tf.reduce_sum(tf.square(diffs), axis=-1)
+            elif metric == 'dfdfeuclidean':
+                return tf.sqrt(tf.reduce_sum(tf.square(diffs), axis=-1) + 1e-12)
+            elif metric == 'cityblock':
+                return tf.reduce_sum(tf.abs(diffs), axis=-1)
+            else:
+                raise NotImplementedError(
+                    'The following metric is not implemented by `cdist` yet: {}'.format(metric))
+
 cdist.supported_metrics = [
     'euclidean',
     'sqeuclidean',

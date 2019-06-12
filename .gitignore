@@ -1,5 +1,9 @@
 experiments/
 src/external/mexopencv/
+src/external/DukeMTMC-reID_evaluation/data
+
+.idea/
+*.ckpt
 *.mex*
 *.asv
 *.pyc

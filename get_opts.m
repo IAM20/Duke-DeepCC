@@ -3,11 +3,11 @@ function opts = get_opts()
 addpath(genpath('src'))
 
 opts = [];
-opts.dataset_path    = 'F:/DukeMTMC/';
+opts.dataset_path    = 'D:/data/DukeMTMC/';
 opts.gurobi_path     = 'C:/gurobi800/win64/matlab';
 opts.experiment_root = 'experiments';
 opts.experiment_name = 'demo';
-opts.python3         = 'python3'; 
+opts.python3         = 'python'; 
 
 opts.reader = DukeVideoReader(opts.dataset_path);
 
@@ -68,7 +68,7 @@ identities.extract_images = true;
 % CNN model
 net = [];
 net.train_set = 'data/duke_train.csv';
-net.image_root = 'F:/DukeMTMC/DukeMTMC-reID';
+net.image_root = 'D:/data/DukeMTMC/DukeMTMC-reID';
 net.model_name = 'resnet_v1_50';
 net.initial_checkpoint = 'resnet_v1_50.ckpt';
 net.experiment_root = 'experiments/demo_weighted_triplet';
@@ -88,7 +88,7 @@ net.decay_start_iteration = 15000;
 net.gpu_device = 0;
 net.augment = true;
 net.resume = false;
-net.checkpoint_frequency = 1000;
+net.checkpoint_frequency = 5000;
 net.hard_pool_size = 0;
 
 opts.tracklets = tracklets;

@@ -274,7 +274,8 @@ def main():
     ], random_order=False)
     # Content transformation
     seq_img = iaa.SomeOf((0,3), [
-        iaa.GaussianBlur(sigma=(0, 1.0)),  # blur images with a sigma of 0 to 2.0
+        iaa.BilateralBlur(d=(3, 10), sigma_color=(10, 250), sigma_space=(10, 250)),
+        # iaa.GaussianBlur(sigma=(0, 1.0)),  # blur images with a sigma of 0 to 2.0
         iaa.ContrastNormalization(alpha=(0.9, 1.1)),
         iaa.Grayscale(alpha=(0, 0.2)),
         iaa.Multiply((0.9, 1.1))
