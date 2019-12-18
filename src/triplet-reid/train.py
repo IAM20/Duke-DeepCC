@@ -24,6 +24,7 @@ from imgaug import augmenters as iaa
 import cv2
 import h5py
 import scipy.spatial.distance
+import pywt
 
 parser = ArgumentParser(description='Train a ReID network.')
 
@@ -237,9 +238,56 @@ def sample_batch_ids_for_pid(pid, all_pids, batch_p, all_hard_pids=None):
         batch_pids = tf.concat([pid, batch_hard_pids, random_pids], axis=-1)
 
     return batch_pids
+
+
+def wvtransform(img):
+    coeffs = pywt.dwt2(img, 'haar')
+    threshold, np_coeffs = bayes_shrink(coeffs)
+    cA, cH, cV, cD = soft_threshold(np_coeffs, threshold)
+    detail = cH, cV, cD
+    detail = tuple(map(tuple, detail))
+    coeffs = cA, detail
+    img = pywt.idwt2(coeffs, 'haar')
+
+    return img
+
+
+def soft_threshold(coeffs, threshold):
+    return pywt.threshold(coeffs, value=threshold, mode='soft')
+
+
+def bayes_shrink(coeffs):
+    cA, (cH, cV, cD) = coeffs
+
+    tmp = np.stack((cA, cH, cV, cD))
+    sigV2 = (np.median(np.abs(cD)) / 0.6745) ** 2
+    sigY2 = np.sum(np.power(tmp, 2)) / 4
+
+    sigx = np.sqrt(max([(sigY2 - sigV2), 0]))
+
+    if sigx != 0:
+        threshold = sigV2 / sigx
+    else:
+        threshold = max(np.abs(coeffs))
+
+    return threshold, tmp
+
 def augment_images(img):
 
     img = np.array(img)
+
+    # wavelet transform
+    img_r = img[:, :, 0]
+    img_g = img[:, :, 1]
+    img_b = img[:, :, 2]
+
+    img_r = wvtransform(img_r)
+    img_g = wvtransform(img_g)
+    img_b = wvtransform(img_b)
+
+    img = np.array([img_r, img_g, img_b])
+    img = np.transpose(img, (1, 2, 0))
+
     img = img.astype('uint8')
 
     global seq_geo
@@ -274,8 +322,8 @@ def main():
     ], random_order=False)
     # Content transformation
     seq_img = iaa.SomeOf((0,3), [
-        iaa.BilateralBlur(d=(3, 10), sigma_color=(10, 250), sigma_space=(10, 250)),
-        # iaa.GaussianBlur(sigma=(0, 1.0)),  # blur images with a sigma of 0 to 2.0
+        # iaa.BilateralBlur(d=(3, 10), sigma_color=(10, 250), sigma_space=(10, 250)),
+        iaa.GaussianBlur(sigma=(0, 1.0)),  # blur images with a sigma of 0 to 2.0
         iaa.ContrastNormalization(alpha=(0.9, 1.1)),
         iaa.Grayscale(alpha=(0, 0.2)),
         iaa.Multiply((0.9, 1.1))

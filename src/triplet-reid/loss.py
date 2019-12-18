@@ -55,7 +55,7 @@ def cdist(a, b, metric='euclidean'):
         else:
             diffs = all_diffs(a, b)
             if metric == 'sqeuclidean':
-                return tf.reduce_sum(tf.square(diffs), axis=-1)
+                return tf.sqrt(tf.reduce_sum(tf.square(diffs), axis=-1) + 1e-12)
             elif metric == 'dfdfeuclidean':
                 return tf.sqrt(tf.reduce_sum(tf.square(diffs), axis=-1) + 1e-12)
             elif metric == 'cityblock':
